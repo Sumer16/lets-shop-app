@@ -1,24 +1,66 @@
 import './style.css'
-import javascriptLogo from './javascript.svg'
-import viteLogo from '/vite.svg'
-import { setupCounter } from './counter.js'
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-app.js"
+import { getDatabase, ref, push, onValue, remove } from "https://www.gstatic.com/firebasejs/9.19.1/firebase-database.js"
 
-document.querySelector('#app').innerHTML = `
-  <div>
-    <a href="https://vitejs.dev" target="_blank">
-      <img src="${viteLogo}" class="logo" alt="Vite logo" />
-    </a>
-    <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript" target="_blank">
-      <img src="${javascriptLogo}" class="logo vanilla" alt="JavaScript logo" />
-    </a>
-    <h1>Hello Vite!</h1>
-    <div class="card">
-      <button id="counter" type="button"></button>
-    </div>
-    <p class="read-the-docs">
-      Click on the Vite logo to learn more
-    </p>
-  </div>
-`
+const appSettings = { 
+  databaseURL: "Add your Real-time database URL"
+}
 
-setupCounter(document.querySelector('#counter'))
+const app = initializeApp(appSettings)
+const database = getDatabase(app)
+const shoppingListInDB = ref(database, "shoppingList")
+
+const inputFieldEl = document.getElementById("input-field")
+const addButtonEl = document.getElementById("add-button")
+const shoppingListEl = document.getElementById("shopping-list")
+
+addButtonEl.addEventListener("click", () => {
+  let inputValue = inputFieldEl.value
+
+  push(shoppingListInDB, inputValue)
+
+  clearInputFieldEl()
+})
+
+onValue(shoppingListInDB, function(snapshot) {
+  if (snapshot.exists()) {
+    let shoppingListArray = Object.entries(snapshot.val())
+
+    clearShoppingListEl()
+
+    for (let i=0; i < shoppingListArray.length; i++) {
+      let currentItem = shoppingListArray[i]
+
+      let currentItemID = currentItem[0]
+      let currentItemValue = currentItem[1]
+
+      appendItemsToList(currentItem)
+    }
+  } else {
+    shoppingListEl.innerHTML = `<h1>No items here...yet &#128533;</h1>`
+  }
+})
+
+function clearInputFieldEl() {
+  inputFieldEl.value = ""
+}
+
+function clearShoppingListEl() {
+  shoppingListEl.innerHTML = ""
+}
+
+function appendItemsToList(item) {
+  let itemID = item[0]
+  let itemValue = item[1]
+
+  let newListEl = document.createElement("li")
+  newListEl.textContent = itemValue
+
+  newListEl.addEventListener("click", function() {
+    let exactLocationOfItemInDB = ref(database, `shoppingList/${itemID}`)
+
+    remove(exactLocationOfItemInDB)
+  })
+  
+  shoppingListEl.append(newListEl)
+}

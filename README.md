@@ -1,1 +1,1 @@
-# lets-shop-app
+# Let's Shop
